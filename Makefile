@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -std=c++1y -g
 
-TARGETS = test_parenthesis
+TARGETS = bin_packing_best_worst_fit.cpp test_parenthesis
 
 all: $(TARGETS)
 
