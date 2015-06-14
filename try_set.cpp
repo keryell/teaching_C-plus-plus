@@ -21,7 +21,7 @@ void try_set(value_type v, set_type s) {
 
 
 int main() {
-  set_type my_set { 1, 2, 3, 4, 5 };
+  set_type my_set { 1, 3, 5, 4, 2 };
   try_set(-10, my_set);
   try_set(1, my_set);
   try_set(2, my_set);
