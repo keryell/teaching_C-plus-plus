@@ -28,27 +28,35 @@ particular string.
 */
 template <typename String, typename CharMap>
 void perm(String &permutation,
-          CharMap &char_map,
-          std::size_t remaining_char) {
-  /* If the permutation string has the right size, print it and stop the
-     recursion */
-  if (remaining_char == 0)
+          CharMap &char_map) {
+  /* If there are no longer any character to use, print the permutation
+     and stop the recursion */
+  if (char_map.empty())
     std::cout << permutation << std::endl;
   else
     // For each character to try
     for (auto &i : char_map) {
-      // If there is still an instance of this character to use
-      if (i.second != 0) {
-        // Since we use this letter, remove 1 instance
-        i.second--;
-        // Append the character to the permutation string
-        permutation += i.first;
-        perm(permutation, char_map, remaining_char - 1);
-        // Trim the last character
-        permutation.resize(permutation.size() - 1);
+      // Since we use this letter, remove 1 instance
+      i.second--;
+      // Append the character to the permutation string
+      permutation += i.first;
+      if (i.second == 0) {
+        /* If there is no longer this character, remove it from the map to
+           avoid a test for it in subsequent recursions */
+        char_map.erase(i.first);
+        perm(permutation, char_map);
+        /* Restore the letter instance. This seems to restore the iterator
+           too, somehow. The issue here is that we are modifying the map
+           we are iterating on... */
+        char_map[permutation[permutation.size() - 1]] = 1;
+      }
+      else {
+        perm(permutation, char_map);
         // Restore the letter instance
         i.second++;
       }
+      // Trim the last character we added before
+      permutation.resize(permutation.size() - 1);
     }
 }
 
@@ -64,7 +72,7 @@ void permute(String &input) {
     char_map[c]++;
 
   String permutation;
-  perm(permutation, char_map, input.size());
+  perm(permutation, char_map);
 }
 
 
