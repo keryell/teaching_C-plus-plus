@@ -34,26 +34,30 @@ void perm(String &permutation,
   if (char_map.empty())
     std::cout << permutation << std::endl;
   else
-    // For each character to try
-    for (auto &i : char_map) {
-      // Since we use this letter, remove 1 instance
-      i.second--;
-      // Append the character to the permutation string
-      permutation += i.first;
-      if (i.second == 0) {
+    /* For each character to try
+
+       Do not use a range-based for loop because we modify the map on the
+       fly and need to manage the iterator */
+    for (auto i = char_map.begin(); i != char_map.end(); ++i) {
+      // Append the character (the key) to the permutation string
+      permutation += i->first;
+      // Since we use this letter, remove 1 instance (which is the map value)
+      if (--(i->second) == 0) {
         /* If there is no longer this character, remove it from the map to
            avoid a test for it in subsequent recursions */
-        char_map.erase(i.first);
+        char_map.erase(i);
+        // Recurse with one character less
         perm(permutation, char_map);
-        /* Restore the letter instance. This seems to restore the iterator
-           too, somehow. The issue here is that we are modifying the map
-           we are iterating on... */
-        char_map[permutation[permutation.size() - 1]] = 1;
+        /* Restore the letter instance and restore the iterator
+           to point again to this element */
+        i = char_map.insert(std::make_pair(permutation[permutation.size() - 1],
+                                           1)).first;
       }
       else {
-        perm(permutation, char_map);
+        // Recurse with one character less
+         perm(permutation, char_map);
         // Restore the letter instance
-        i.second++;
+        ++(i->second);
       }
       // Trim the last character we added before
       permutation.resize(permutation.size() - 1);
