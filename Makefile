@@ -15,5 +15,8 @@ TARGETS = bin_packing_best_worst_fit \
 
 all: $(TARGETS)
 
+# Make NTTP_ref from NTTP_ref.cpp and NTTP_ref_2.cpp
+NTTP_ref: NTTP_ref_2.o
+
 clean:
 	rm -f $(TARGETS)
