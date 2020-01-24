@@ -1,7 +1,7 @@
 CXXFLAGS = -Wall -std=c++2a -O3
 
 # To use Boost.Thread & Boost.Fiber
-LDLIBS += -lboost_thread -lboost_system -lboost_fiber -lboost_context
+LDLIBS += -lboost_thread -lboost_system -lboost_fiber -lboost_context -lpthread
 
 TARGETS = bin_packing_best_worst_fit \
 	boost_fiber \
