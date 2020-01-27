@@ -20,6 +20,8 @@ void iterate(int res[5], int i, short a[5][10], short b[5][10],
   // Expand the call for each J. Use assignment just to have some
   // expansion syntax
   auto junk = { (res[J] = func<J>(a[J][i], b[J][i]))... };
+  // Silent the "unused warning"
+  static_cast<void>(junk);
 }
 
 void my_function() {
