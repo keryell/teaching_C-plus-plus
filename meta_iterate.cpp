@@ -52,10 +52,10 @@ int main() {
       example<decimsize[i - 1], decimsize[i + 1]>(i);
   });
 
-  boost::hana::tuple noc = {
+  auto noc = boost::hana::make_tuple(
     std::tuple { 1, 0, "east_last" },
     std::tuple { -1, 0, "west_last" }
-  };
+  );
   boost::hana::for_each(noc, [] (auto direction) {
     auto [ dx, dy, dir ] = direction;
     std::cout << dx << ' ' << dy << ' ' << dir << ' ' << std::endl;
