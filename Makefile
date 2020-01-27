@@ -4,13 +4,18 @@ CXXFLAGS = -Wall -std=c++2a -O3
 LDLIBS += -lboost_thread -lboost_system -lboost_fiber -lboost_context -lpthread
 
 TARGETS = bin_packing_best_worst_fit \
-	boost_fiber \
+	Boost/Fiber/boost_fiber \
+	Boost/Fiber/fibers_with_threads \
 	constexpr_fibonacci \
 	meta_iterate \
+	move/vectors \
 	permute_string_letters \
 	permute_unique_string_letters \
+	quizz/quizz \
 	ranges \
-	test_parenthesis try_set \
+	ref_to_array \
+	test_parenthesis \
+	try_set \
 	uninitialized_vector
 
 all: $(TARGETS)

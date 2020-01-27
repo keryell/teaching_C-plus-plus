@@ -2,7 +2,7 @@
 
     Small example showing how to use some threads to simulate a
     network with some routing elements running in fibers.
- */
+*/
 
 #include <cassert>
 #include <future>
