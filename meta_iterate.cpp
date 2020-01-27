@@ -25,7 +25,8 @@ void iterate(int res[5], int i, short a[5][10], short b[5][10],
 }
 
 void my_function() {
-  short a[5][10], b[5][10];
+  short a[5][10] = {};
+  short b[5][10] = {};
   int res[5];
 
   for (int i = 0; i < 10; ++i)
