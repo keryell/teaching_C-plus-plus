@@ -1,7 +1,8 @@
 /** \file
 
     Small example showing how to use some threads to simulate a
-    network with some routing elements running in fibers.
+    network with some routing elements running in fibers in a specific
+    thread (not in different threads).
 */
 
 #include <cassert>
