@@ -3,6 +3,11 @@
     Small example showing how to use some threads to simulate a
     network with some routing elements running in fibers running in
     different threads.
+
+    The assumption is that no thread using
+    boost::fibers::use_scheduling_algorithm
+    <boost::fibers::algo::work_stealing> can finish before all the
+    fibers have finished, otherwise there is a deadlock.
 */
 
 #include <future>
@@ -29,10 +34,13 @@ auto constexpr suspend = false;
 
 using packet = int;
 
+// Do not start the fibers before all the threads are launched
 boost::barrier starting_block { num_threads };
-boost::barrier finish_line { num_threads };
+// Do not end a thread before all the fibers have finished.
+// Use a fiber barrier so that we can still schedule the fibers on
+// all the threads.
+boost::fibers::barrier finish_line { num_threads };
 
-//auto console = spdlog::stdout_logger_mt("console");
 std::shared_ptr<spdlog::logger> console;
 
 auto logging = [] (auto message, auto... args) {
@@ -69,7 +77,8 @@ struct router {
            [&] {
              logging("router {} starting with buffered_channel {}",
                      (void *)this, (void *)&ingress);
-             for (int i = 0; i < message_length; ++i) {
+             // message_length*2 because we have 2 producers
+             for (int i = 0; i < message_length*2; ++i) {
                 logging("router {} reading from buffered_channel {}",
                         (void *)this, (void *)&ingress);
                auto v = ingress.value_pop();
@@ -79,6 +88,8 @@ struct router {
              logging("router {} is shutting down", (void *)this);;
            }
       };
+      // Wait for shutdown to avoid calling std::terminate on destruction...
+      f.join();
       finish_line.wait();
     });
   }
@@ -100,8 +111,6 @@ struct router {
 
   /// Destructor handling the correct infrastructure shutdown
   ~router() {
-    // Wait for shutdown to avoid calling std::terminate on destruction...
-    f.join();
     fiber_runner.get();
   }
 };
