@@ -1,7 +1,7 @@
 /* Experiment with annotations
 
-   clang++-9 -std=c++2a -O0 -S -emit-llvm -mllvm -disable-llvm-optzns \
-   attribute/annotate.cpp
+   clang++-11 -std=c++2a -O0 -S -emit-llvm -mllvm -disable-llvm-optzns \
+   annotate.cpp
 
   %5 = bitcast %struct.s* %2 to i8*
   call void @llvm.var.annotation(i8* %5, i8* getelementptr inbounds
