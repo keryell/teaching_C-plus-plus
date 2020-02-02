@@ -29,8 +29,8 @@ auto constexpr capacity = 4;
 auto constexpr message_length = 10;
 auto constexpr num_threads = 3;
 /// Whether the fibers suspend their thread or not
-auto constexpr suspend = false;
-//auto constexpr suspend = true;
+//auto constexpr suspend = false;
+auto constexpr suspend = true;
 
 using packet = int;
 
@@ -94,7 +94,7 @@ struct router {
     });
   }
 
-//    std::vector<std::shared_ptr<router_port>> outputs;
+
   void write(int v) {
     logging("writing {} to router {} on buffered_channel {}",
             v, (void *)this, (void *)&ingress);
