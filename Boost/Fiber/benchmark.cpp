@@ -24,43 +24,45 @@ enum class sched {
   work_stealing
 };
 
-auto constexpr iterations = 1e6;
-auto constexpr fiber_number = 400;
-auto constexpr thread_number = 6;
-
 //auto constexpr starting_mode = boost::fibers::launch::dispatch;
 auto constexpr starting_mode = boost::fibers::launch::post;
-//auto constexpr scheduler = sched::round_robin;
-//auto constexpr scheduler = sched::shared_work;
-auto constexpr scheduler = sched::work_stealing;
-auto constexpr suspend = false;
-//auto constexpr suspend = true;
 
+// Use precise time measurement
 using clk = std::chrono::high_resolution_clock;
 
-/// To synchronize all the threads before they can run some fibers
-boost::barrier b { thread_number };
-
 /// Install the requested scheduler in the thread executing this function
-void install_fiber_scheduler() {
-  if constexpr (scheduler == sched::shared_work)
+void install_fiber_scheduler(sched scheduler, int thread_number, bool suspend) {
+  if (scheduler == sched::shared_work)
     boost::fibers::use_scheduling_algorithm
       <boost::fibers::algo::shared_work>();
-  if constexpr (scheduler == sched::work_stealing)
+  if (scheduler == sched::work_stealing)
     boost::fibers::use_scheduling_algorithm
       <boost::fibers::algo::work_stealing>(thread_number, suspend);
 }
 
+/// A parametric benchmark
+void bench_mark(int thread_number,
+                int fiber_number,
+                int iterations,
+                sched scheduler,
+                bool suspend) {
+  std::cout << "threads: " << thread_number
+            << " fibers: "<< fiber_number
+            << " iterations: " << iterations
+            << " scheduler: " << static_cast<int>(scheduler)
+            << " suspend: " << static_cast<int>(suspend) << std::flush;
 
-int main() {
   /// The basic benchmark is fiber doing a lot of yield()
-  auto bench = [] {
-    for (auto counter = iterations; counter != 0; --counter)
-      boost::this_fiber::yield();
-  };
+  auto bench = [&] {
+                 for (auto counter = iterations; counter != 0; --counter)
+                   boost::this_fiber::yield();
+               };
 
   // Install fiber scheduler in main thread
-  install_fiber_scheduler();
+  install_fiber_scheduler(scheduler, thread_number, suspend);
+
+  /// To synchronize all the threads before they can run some fibers
+  boost::barrier b { static_cast<unsigned int>(thread_number) };
 
   // Just to block the working threads while there is some work to do
   boost::fibers::unbuffered_channel<int> blocker;
@@ -70,7 +72,9 @@ int main() {
   | ranges::views::transform([&] (auto i) {
       return std::async(std::launch::async,
                         [&] {
-                          install_fiber_scheduler();
+                          install_fiber_scheduler(scheduler,
+                                                  thread_number,
+                                                  suspend);
                           // Wait for other threads to be ready
                           b.count_down_and_wait();
                           try {
@@ -97,15 +101,35 @@ int main() {
 
   // Get the duration in seconds as a double
   std::chrono::duration<double> duration = clk::now() - starting_point;
-  std::cout << "Execution time = " << duration.count() << " s" << std::endl;
-  std::cout << "Time between context switches = "
-            << duration.count()/iterations/fiber_number*1e9
-            << " ns" << std::endl;
+  // In s
+  std::cout << " time: " << duration.count()
+            <<" inter context switch: "
+    // In ns
+            << duration.count()/iterations/fiber_number*1e9 << std::endl;
 
   // Unleash the threads
   blocker.close();
 
   for (auto &t : threads)
     t.get();
+}
 
+int main() {
+  for (int thread_number = 1; thread_number <= 20; ++thread_number)
+    for (auto fiber_number : { 1, 3, 10, 30, 100, 300, 1000, 3000 })
+      for (auto iterations : { 1e4, 1e5, 1e6 })
+        for (auto scheduler :
+             { sched::round_robin, sched::shared_work, sched::work_stealing}) {
+          bench_mark(thread_number,
+                     fiber_number,
+                     iterations,
+                     scheduler,
+                     false);
+          if (scheduler == sched::work_stealing)
+            bench_mark(thread_number,
+                       fiber_number,
+                       iterations,
+                       scheduler,
+                       true);
+        }
 }
