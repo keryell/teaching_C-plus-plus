@@ -12,6 +12,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <thread>
 #include <vector>
 #include <boost/fiber/all.hpp>
 #include <boost/thread/barrier.hpp>
@@ -22,6 +23,7 @@ enum class sched {
   round_robin,
   shared_work,
   work_stealing
+  // \todo Add numa
 };
 
 //auto constexpr starting_mode = boost::fibers::launch::dispatch;
@@ -58,46 +60,50 @@ void bench_mark(int thread_number,
                    boost::this_fiber::yield();
                };
 
-  // Install fiber scheduler in main thread
-  install_fiber_scheduler(scheduler, thread_number, suspend);
-
   /// To synchronize all the threads before they can run some fibers
   boost::barrier b { static_cast<unsigned int>(thread_number) };
 
   // Just to block the working threads while there is some work to do
   boost::fibers::unbuffered_channel<int> blocker;
 
-  // Start more threads, beside the main one
-  auto threads = ranges::iota_view { 0, thread_number - 1}
-  | ranges::views::transform([&] (auto i) {
-      return std::async(std::launch::async,
-                        [&] {
-                          install_fiber_scheduler(scheduler,
-                                                  thread_number,
-                                                  suspend);
-                          // Wait for other threads to be ready
-                          b.count_down_and_wait();
-                          try {
-                            (void) blocker.value_pop();
-                          } catch(...) {}
-                        }); })
-  | ranges::to<std::vector>;
-
-  // Wait for all the fiber schedulers to be installed in each thread
-  // before launching any fiber, otherwise it crashes
-  b.count_down_and_wait();
-
   auto starting_point = clk::now();
 
-  // Start fiber_number entities running bench
-  auto fibers = ranges::iota_view { 0, fiber_number }
-  | ranges::views::transform([&] (auto i) {
-      return boost::fibers::fiber { starting_mode, bench }; })
-  | ranges::to<std::vector>;
+  // Start the working threads
+  auto threads = ranges::iota_view { 0, thread_number }
+               | ranges::views::transform([&] (auto i) {
+    return std::async(std::launch::async,
+                      [&] {
+      // A thread cannot have another scheduler installed, so do it in
+      // a brand new thread
+      install_fiber_scheduler(scheduler,
+                              thread_number,
+                              suspend);
+      // Wait for all thread workers to be ready
+      b.count_down_and_wait();
+      if (i == 0) {
+        // The first thread start fiber_number fibers running bench
+        auto fibers = ranges::iota_view { 0, fiber_number }
+                    | ranges::views::transform([&] (auto i) {
+                        return boost::fibers::fiber { starting_mode, bench }; })
+                    | ranges::to<std::vector>;
+        // Wait for everybody to finish
+        for (auto &f : fibers)
+          f.join();
+        // Unleash the other threads
+        blocker.close();
+      }
+      else
+        try {
+          // The threads block on the fiber scheduler until this throws
+          // because the channel is closed. The fiber scheduler might
+          // schedule some fibers behind the scene
+          (void) blocker.value_pop();
+        } catch(...) {}
+     }); })
+                   | ranges::to<std::vector>;
 
-  // Wait for everybody to finish
-  for (auto &f : fibers)
-    f.join();
+  for (auto &t : threads)
+    t.get();
 
   // Get the duration in seconds as a double
   std::chrono::duration<double> duration = clk::now() - starting_point;
@@ -106,20 +112,16 @@ void bench_mark(int thread_number,
             <<" inter context switch: "
     // In ns
             << duration.count()/iterations/fiber_number*1e9 << std::endl;
-
-  // Unleash the threads
-  blocker.close();
-
-  for (auto &t : threads)
-    t.get();
 }
 
 int main() {
-  for (int thread_number = 1; thread_number <= 20; ++thread_number)
+  for (int thread_number = 1;
+       thread_number <= 2*std::thread::hardware_concurrency();
+       ++thread_number)
     for (auto fiber_number : { 1, 3, 10, 30, 100, 300, 1000, 3000 })
       for (auto iterations : { 1e4, 1e5, 1e6 })
         for (auto scheduler :
-             { sched::round_robin, sched::shared_work, sched::work_stealing}) {
+             { sched::round_robin, sched::shared_work, sched::work_stealing }) {
           bench_mark(thread_number,
                      fiber_number,
                      iterations,
