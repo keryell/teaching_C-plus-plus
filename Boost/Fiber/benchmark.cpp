@@ -55,8 +55,8 @@ void bench_mark(int thread_number,
   /// To synchronize all the threads before they can run some fibers
   boost::barrier b { static_cast<unsigned int>(thread_number) };
 
-  // Just to block the working threads while there is some work to do
-  boost::fibers::unbuffered_channel<int> blocker;
+  /// To synchronize all the threads after their last fiber
+  boost::fibers::barrier finish { static_cast<unsigned int>(thread_number) };
 
   // Optimisticly create a pool context for the work-stealing scheduler
   auto pc = boost::fibers::algo::pooled_work_stealing::create_pool_ctx
@@ -87,19 +87,12 @@ void bench_mark(int thread_number,
                     | ranges::views::transform([&] (auto i) {
                         return boost::fibers::fiber { starting_mode, bench }; })
                     | ranges::to<std::vector>;
-        // Wait for everybody to finish
+        // Wait for all the fibers to finish
         for (auto &f : fibers)
           f.join();
-        // Unleash the other threads
-        blocker.close();
       }
-      else
-        try {
-          // The threads block on the fiber scheduler until this throws
-          // because the channel is closed. The fiber scheduler might
-          // schedule some fibers behind the scene
-          (void) blocker.value_pop();
-        } catch(...) {}
+      // Wait for all the threads to finish their fiber execution
+      finish.wait();
      }); })
                    | ranges::to<std::vector>;
 

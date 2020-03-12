@@ -2,11 +2,12 @@
 CXX=clang++-11
 #CXX=g++-9
 CXXFLAGS += -O3
+#CXXFLAGS += -g
 
 #CXXFLAGS += -I ~/Xilinx/Projects/C++/range-v3/include -Wall -std=c++2a -D__cpp_concepts=0
 #CXXFLAGS += -Wall -std=c++2a -U__cpp_concepts
 #CXXFLAGS += -Wall -std=c++2a
-CXXFLAGS += -I ~/Xilinx/Projects/C++/range-v3/include -Wall -std=c++2a -U__cpp_concepts 
+CXXFLAGS += -I ~/Xilinx/Projects/C++/range-v3/include -Wall -std=c++2a
 # To use Clang C++ standard library:
 #CXXFLAGS += -stdlib=libc++
 
