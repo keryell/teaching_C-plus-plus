@@ -18,6 +18,8 @@
 #include <boost/thread/barrier.hpp>
 #include <range/v3/all.hpp>
 
+#include "pooled_work_stealing.hpp"
+
 /// To select some various Boost.Fibers schedulers
 enum class sched {
   round_robin,
@@ -31,16 +33,6 @@ auto constexpr starting_mode = boost::fibers::launch::post;
 
 // Use precise time measurement
 using clk = std::chrono::high_resolution_clock;
-
-/// Install the requested scheduler in the thread executing this function
-void install_fiber_scheduler(sched scheduler, int thread_number, bool suspend) {
-  if (scheduler == sched::shared_work)
-    boost::fibers::use_scheduling_algorithm
-      <boost::fibers::algo::shared_work>();
-  if (scheduler == sched::work_stealing)
-    boost::fibers::use_scheduling_algorithm
-      <boost::fibers::algo::work_stealing>(thread_number, suspend);
-}
 
 /// A parametric benchmark
 void bench_mark(int thread_number,
@@ -66,20 +58,29 @@ void bench_mark(int thread_number,
   // Just to block the working threads while there is some work to do
   boost::fibers::unbuffered_channel<int> blocker;
 
+  // Optimisticly create a pool context for the work-stealing scheduler
+  auto pc = boost::fibers::algo::pooled_work_stealing::create_pool_ctx
+    (thread_number, suspend);
+
   auto starting_point = clk::now();
 
   // Start the working threads
   auto threads = ranges::iota_view { 0, thread_number }
-               | ranges::views::transform([&] (auto i) {
+               | ranges::views::transform([&] (int i) {
     return std::async(std::launch::async,
-                      [&] {
+                      [&, i] {
       // A thread cannot have another scheduler installed, so do it in
       // a brand new thread
-      install_fiber_scheduler(scheduler,
-                              thread_number,
-                              suspend);
+      if (scheduler == sched::shared_work)
+        boost::fibers::use_scheduling_algorithm
+          <boost::fibers::algo::shared_work>();
+      else if (scheduler == sched::work_stealing)
+        boost::fibers::use_scheduling_algorithm
+          <boost::fibers::algo::pooled_work_stealing>(pc);
+
       // Wait for all thread workers to be ready
       b.count_down_and_wait();
+
       if (i == 0) {
         // The first thread start fiber_number fibers running bench
         auto fibers = ranges::iota_view { 0, fiber_number }
