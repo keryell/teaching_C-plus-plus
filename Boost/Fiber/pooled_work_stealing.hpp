@@ -73,7 +73,7 @@ public:
     return std::make_shared<pool_ctx>(thread_count, suspend);
   }
 
-  pooled_work_stealing(std::shared_ptr<pool_ctx> pc )
+  pooled_work_stealing(std::shared_ptr<pool_ctx> pc)
     : pool_ctx_ { pc }
     , id_ { pool_ctx_->counter_++ } {
       pool_ctx_->schedulers_[id_] = this;
