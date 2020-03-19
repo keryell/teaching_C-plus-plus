@@ -10,6 +10,7 @@
     to be amortize on the global long running time.
 */
 
+#include <atomic>
 #include <chrono>
 #include <iostream>
 
@@ -32,10 +33,18 @@ void bench_mark(int thread_number,
 
   fiber_pool fp { thread_number, scheduler, suspend };
 
+  std::atomic<std::int64_t> c = 0;
+  std::atomic<std::int64_t> f = 0;
+  std::atomic<std::int64_t> s = 0;
+
   /// The basic benchmark is fiber doing a lot of yield()
   auto bench = [&] {
-                 for (auto counter = iterations; counter != 0; --counter)
+                 ++s;
+                 for (auto counter = iterations; counter != 0; --counter) {
                    boost::this_fiber::yield();
+                   ++c;
+                 }
+                 ++f;
                };
 
   auto starting_point = clk::now();
@@ -48,6 +57,10 @@ void bench_mark(int thread_number,
 
   // Get the duration in seconds as a double
   std::chrono::duration<double> duration = clk::now() - starting_point;
+  std::cout  << " S: " << s << std::endl;
+  std::cout  << " F: " << f << std::endl;
+  std::cout  << " C: " << c << std::endl;
+
   // In s
   std::cout << " time: " << duration.count()
             << " inter context switch: "

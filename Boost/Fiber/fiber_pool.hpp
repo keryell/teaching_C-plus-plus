@@ -38,7 +38,10 @@ private:
   //static auto constexpr starting_mode = boost::fibers::launch::dispatch;
 
   /// To synchronize all the threads before they can run some fibers
-  boost::barrier b;
+  boost::barrier starting_block;
+
+  /// To synchronize all the threads after their last fiber
+  boost::fibers::barrier finish_line;
 
   /// To avoid joining several times
   bool joinable = true;
@@ -55,7 +58,8 @@ public:
   fiber_pool(int thread_number,
              sched scheduler,
              bool suspend)
-    : b { static_cast<unsigned int>(thread_number) }
+    : starting_block { static_cast<unsigned int>(thread_number) }
+    , finish_line { static_cast<unsigned int>(thread_number) }
     , s { scheduler }
   {
     if (scheduler == sched::work_stealing)
@@ -67,7 +71,7 @@ public:
     working_threads = ranges::iota_view { 0, thread_number }
                     | ranges::views::transform([&] (int i) {
                         return std::async(std::launch::async,
-                                   [&, i] { run(i); }); })
+                                          [&, i] { run(i); }); })
                     | ranges::to<std::vector>;
   }
 
@@ -103,7 +107,7 @@ public:
 
   /// Wait for some remaining work to be done
   ~fiber_pool() {
-    // Join if not done already
+    // Join first if not done already
     join();
   }
 
@@ -122,7 +126,7 @@ private:
     // case
 
     // Wait for all thread workers to be ready
-    b.count_down_and_wait();
+    starting_block.count_down_and_wait();
 
     if (i == 0) {
       // Only the first thread receives the work
@@ -136,6 +140,9 @@ private:
         boost::fibers::fiber { starting_mode, std::move(work) }.detach();
       }
     }
+    // Wait for all the threads to finish their fiber execution
+    finish_line.wait();
+    std::cout << " Stop " << i << std::endl;
   }
 
 };
