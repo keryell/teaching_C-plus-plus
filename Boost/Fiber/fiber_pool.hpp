@@ -140,7 +140,8 @@ private:
           // Someone asked to stop accepting work
           break;
         // Launch the work on a new unattended fiber
-        boost::fibers::fiber { starting_mode, std::move(work) }.detach();
+        boost::fibers::fiber { starting_mode,
+                               [f = std::move(work)] { f(); } }.detach();
       }
     }
     // Wait for all the threads to finish their fiber execution
