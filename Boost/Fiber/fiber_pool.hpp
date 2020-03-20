@@ -51,7 +51,7 @@ private:
   sched s;
 
   // Optimisticly create a pool context for the work-stealing scheduler
-  std::shared_ptr<boost::fibers::algo::pooled_work_stealing::pool_ctx> pc;
+  boost::fibers::algo::pooled_work_stealing::ctx pc;
 
 public:
 

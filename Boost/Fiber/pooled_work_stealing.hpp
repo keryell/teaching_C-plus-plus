@@ -37,9 +37,9 @@
 
 namespace boost::fibers::algo {
 
-class pooled_work_stealing : public boost::fibers::algo::algorithm {
+class BOOST_FIBERS_DECL pooled_work_stealing : public algorithm {
 
-public:
+ public:
 
   /// Shared storage among the working threads
   struct pool_ctx {
@@ -66,10 +66,13 @@ public:
     boost::barrier barrier_;
   };
 
+  /// Type tracking the common worker data
+  using ctx = std::shared_ptr<pool_ctx>;
+
 private:
 
   /// Some shared datastructure among the working threads
-  std::shared_ptr<pool_ctx> pool_ctx_;
+  ctx pool_ctx_;
 
   /// The thread order in the working pool. 0 is first starting thread
   std::uint32_t id_;
@@ -88,13 +91,13 @@ private:
 
 public:
 
-  static std::shared_ptr<pool_ctx>
+  static ctx
   create_pool_ctx(std::uint32_t thread_count, bool suspend) {
     return std::make_shared<pool_ctx>(thread_count, suspend);
   }
 
 
-  pooled_work_stealing(std::shared_ptr<pool_ctx> pc)
+  pooled_work_stealing(const ctx &pc)
     : pool_ctx_ { pc }
     , id_ { pool_ctx_->counter_++ } {
       pool_ctx_->schedulers_[id_] = this;
