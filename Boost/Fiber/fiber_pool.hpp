@@ -12,6 +12,7 @@
 #include <boost/thread/barrier.hpp>
 #include <range/v3/all.hpp>
 
+#include "pooled_shared_work.hpp"
 #include "pooled_work_stealing.hpp"
 
 class fiber_pool {
@@ -119,7 +120,7 @@ private:
   void run(int i) {
     if (s == sched::shared_work)
       boost::fibers::use_scheduling_algorithm
-        <boost::fibers::algo::shared_work>();
+        <boost::fibers::algo::pooled_shared_work>();
     else if (s == sched::work_stealing)
       boost::fibers::use_scheduling_algorithm
         <boost::fibers::algo::pooled_work_stealing>(pc);
