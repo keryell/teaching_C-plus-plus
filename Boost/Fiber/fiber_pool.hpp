@@ -58,7 +58,7 @@ public:
   fiber_pool(int thread_number,
              sched scheduler,
              bool suspend)
-    : starting_block { static_cast<unsigned int>(thread_number) }
+    : starting_block { static_cast<unsigned int>(thread_number) + 1 }
     , finish_line { static_cast<unsigned int>(thread_number) }
     , s { scheduler }
   {
@@ -73,6 +73,8 @@ public:
                         return std::async(std::launch::async,
                                           [&, i] { run(i); }); })
                     | ranges::to<std::vector>;
+    // Wait for all thread workers to be ready
+    starting_block.count_down_and_wait();
   }
 
 
