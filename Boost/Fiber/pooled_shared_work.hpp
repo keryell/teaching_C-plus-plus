@@ -34,27 +34,52 @@ namespace boost::fibers::algo {
 
 class BOOST_FIBERS_DECL pooled_shared_work : public algorithm {
 
- private:
   using rqueue_type = std::deque<context *>;
   using lqueue_type = scheduler::ready_queue_type;
 
-  /// The global queue storing the runnable fibers
-  inline static rqueue_type rqueue_ {};
-  inline static std::mutex rqueue_mtx_ {};
+ public:
+
+  /// Shared storage among the working threads
+  struct pool_ctx {
+    pool_ctx(bool suspend) : suspend_ { suspend }
+    {}
+
+    /// Indicate if a thread without work goes to sleep instead of busy-waiting
+    const bool suspend_;
+
+    /// The global queue storing the runnable fibers
+    rqueue_type rqueue_ {};
+
+    /// For concurrent access to the global queue
+    std::mutex rqueue_mtx_ {};
+  };
+
+  /// Type tracking the common worker data
+  using ctx = std::shared_ptr<pool_ctx>;
+
+ private:
+
+  /// Some shared datastructure among the working threads
+  ctx pool_ctx_;
 
   /// The runnable local fibers bound to the thread
   lqueue_type lqueue_ {};
+
+  /// The thread-local suspend/notify mechanics
   std::mutex mtx_ {};
   std::condition_variable cnd_ {};
   bool flag_ { false };
-  bool suspend_ { false };
 
 public:
-  pooled_shared_work() = default;
 
-  pooled_shared_work(bool suspend) :
-    suspend_ { suspend } {
+  static ctx
+  create_pool_ctx(bool suspend) {
+    return std::make_shared<pool_ctx>(suspend);
   }
+
+
+  pooled_shared_work(const ctx &pc) : pool_ctx_ { pc }
+  {}
 
   pooled_shared_work(pooled_shared_work const&) = delete;
   pooled_shared_work(pooled_shared_work &&) = delete;
@@ -71,22 +96,23 @@ public:
       lqueue_.push_back(*ctx);
     } else {
       ctx->detach();
-      std::unique_lock lk { rqueue_mtx_ }; /*<
+      std::unique_lock lk { pool_ctx_->rqueue_mtx_ }; /*<
             worker fiber, enqueue on shared queue
       >*/
-      rqueue_.push_back(ctx);
+      pool_ctx_->rqueue_.push_back(ctx);
     }
   }
 
 
   context * pick_next() noexcept override {
     context * ctx = nullptr;
-    std::unique_lock lk { rqueue_mtx_ };
-    if (!rqueue_.empty()) { /*<
+    std::unique_lock lk { pool_ctx_->rqueue_mtx_ };
+    auto &rq = pool_ctx_->rqueue_;
+    if (!rq.empty()) { /*<
             pop an item from the ready queue
       >*/
-      ctx = rqueue_.front();
-      rqueue_.pop_front();
+      ctx = rq.front();
+      rq.pop_front();
       lk.unlock();
       BOOST_ASSERT(nullptr != ctx);
       context::active()->attach(ctx); /*<
@@ -107,14 +133,14 @@ public:
 
 
   bool has_ready_fibers() const noexcept override {
-    std::unique_lock lock { rqueue_mtx_ };
-    return !rqueue_.empty() || !lqueue_.empty();
+    std::unique_lock lock { pool_ctx_->rqueue_mtx_ };
+    return !pool_ctx_->rqueue_.empty() || !lqueue_.empty();
   }
 
 
   void suspend_until(std::chrono::steady_clock::time_point const& time_point)
     noexcept override {
-    if (suspend_) {
+    if (pool_ctx_->suspend_) {
       if (std::chrono::steady_clock::time_point::max() == time_point) {
         std::unique_lock lk { mtx_ };
         cnd_.wait(lk, [this](){ return flag_; });
@@ -129,7 +155,7 @@ public:
 
 
   void notify() noexcept override {
-    if (suspend_) {
+    if (pool_ctx_->suspend_) {
       std::unique_lock lk { mtx_ };
       flag_ = true;
       lk.unlock();

@@ -50,8 +50,11 @@ private:
   /// The model of scheduler
   sched s;
 
-  // Optimisticly create a pool context for the work-stealing scheduler
-  boost::fibers::algo::pooled_work_stealing::ctx pc;
+  // Pool context for the work-stealing scheduler
+  boost::fibers::algo::pooled_work_stealing::ctx pc_stealing;
+
+  // Pool context for the work-sharing scheduler
+  boost::fibers::algo::pooled_shared_work::ctx pc_shared;
 
 public:
 
@@ -63,11 +66,13 @@ public:
     , finish_line { static_cast<unsigned int>(thread_number) }
     , s { scheduler }
   {
-    if (scheduler == sched::work_stealing)
+    if (scheduler == sched::shared_work)
       // This scheduler needs a shared context
-      pc = boost::fibers::algo::pooled_work_stealing::create_pool_ctx
+      pc_shared = boost::fibers::algo::pooled_shared_work::create_pool_ctx(suspend);
+    else if (scheduler == sched::work_stealing)
+      // This scheduler needs a shared context
+      pc_stealing = boost::fibers::algo::pooled_work_stealing::create_pool_ctx
         (thread_number, suspend);
-
     // Start the working threads
     working_threads = ranges::iota_view { 0, thread_number }
                     | ranges::views::transform([&] (int i) {
@@ -120,10 +125,10 @@ private:
   void run(int i) {
     if (s == sched::shared_work)
       boost::fibers::use_scheduling_algorithm
-        <boost::fibers::algo::pooled_shared_work>();
+        <boost::fibers::algo::pooled_shared_work>(pc_shared);
     else if (s == sched::work_stealing)
       boost::fibers::use_scheduling_algorithm
-        <boost::fibers::algo::pooled_work_stealing>(pc);
+        <boost::fibers::algo::pooled_work_stealing>(pc_stealing);
     // Otherwise a round-robin scheduler is used and the fibers will
     // use only 1 thread since there is no thread migration in that
     // case

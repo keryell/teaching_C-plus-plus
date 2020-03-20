@@ -82,7 +82,8 @@ int main() {
                      iterations,
                      scheduler,
                      false);
-          if (scheduler == fiber_pool::sched::work_stealing)
+          if (scheduler != fiber_pool::sched::round_robin)
+            // The same but with the thread suspension when no work
             bench_mark(thread_number,
                        fiber_number,
                        iterations,
