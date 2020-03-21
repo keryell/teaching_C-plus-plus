@@ -57,15 +57,13 @@ void bench_mark(int thread_number,
 
   // Get the duration in seconds as a double
   std::chrono::duration<double> duration = clk::now() - starting_point;
-  std::cout  << " S: " << s << std::endl;
-  std::cout  << " F: " << f << std::endl;
-  std::cout  << " C: " << c << std::endl;
 
   // In s
   std::cout << " time: " << duration.count()
             << " inter context switch: "
                // In ns
-            << duration.count()/iterations/fiber_number*1e9 << std::endl;
+            << duration.count()/iterations/fiber_number*1e9 << std::endl
+            << " S: " << s << " F: " << f << " C: " << c << std::endl;
 }
 
 int main() {

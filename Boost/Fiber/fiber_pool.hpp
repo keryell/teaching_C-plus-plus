@@ -151,7 +151,6 @@ private:
     }
     // Wait for all the threads to finish their fiber execution
     finish_line.wait();
-    std::cout << " Stop " << i << std::endl;
   }
 
 };
