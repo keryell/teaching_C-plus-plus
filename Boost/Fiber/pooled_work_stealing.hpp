@@ -134,27 +134,30 @@ public:
       }
     }
     else {
-      std::size_t count = 0;
       std::size_t size = pool_ctx_->thread_count_;
-      static thread_local std::minstd_rand generator { std::random_device{}() };
-      std::uniform_int_distribution< std::uint32_t > distribution
-        { 0, static_cast<std::uint32_t>(size - 1) };
-      do {
-        std::uint32_t id = 0;
+      //  Work stealing is only possible with more than 1 thread
+      if (BOOST_LIKELY(size > 1)) {
+        std::size_t count = 0;
+        static thread_local std::minstd_rand generator { std::random_device{}() };
+        std::uniform_int_distribution< std::uint32_t > distribution
+          { 0, static_cast<std::uint32_t>(size - 1) };
         do {
-          ++count;
-          // Random selection of one logical CPU that belongs to the
-          // local NUMA node
-          id = distribution(generator);
-          // Prevent stealing from own scheduler
-        } while (id == id_);
-        // Steal context from other scheduler
-        victim = pool_ctx_->schedulers_[id]->steal();
-      } while (nullptr == victim && count < size);
-      if (nullptr != victim) {
-        boost::context::detail::prefetch_range(victim, sizeof(context));
-        BOOST_ASSERT(!victim->is_context(type::pinned_context));
-        context::active()->attach(victim);
+          std::uint32_t id = 0;
+          do {
+            ++count;
+            // Random selection of one logical CPU that belongs to the
+            // local NUMA node
+            id = distribution(generator);
+            // Prevent stealing from own scheduler
+          } while (id == id_);
+          // Steal context from other scheduler
+          victim = pool_ctx_->schedulers_[id]->steal();
+        } while (nullptr == victim && count < size);
+        if (nullptr != victim) {
+          boost::context::detail::prefetch_range(victim, sizeof(context));
+          BOOST_ASSERT(!victim->is_context(type::pinned_context));
+          context::active()->attach(victim);
+        }
       }
     }
     return victim;

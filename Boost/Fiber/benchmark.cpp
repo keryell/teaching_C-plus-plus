@@ -67,7 +67,7 @@ void bench_mark(int thread_number,
 }
 
 int main() {
-  for (int thread_number = 2;
+  for (int thread_number = 1;
        thread_number <= 2*std::thread::hardware_concurrency();
        ++thread_number)
     for (auto fiber_number : { 1, 3, 10, 30, 100, 300, 1000, 3000 })
