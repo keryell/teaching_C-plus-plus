@@ -60,7 +60,7 @@ class BOOST_FIBERS_DECL pooled_work_stealing : public algorithm {
     std::atomic<std::uint32_t> counter_ = 0;
 
     /// Keep track of each worker scheduler
-    std::vector<pooled_work_stealing*> schedulers_;
+    std::vector<intrusive_ptr<pooled_work_stealing>> schedulers_;
 
     /// Synchronize all the working thread after starting and before finishing
     boost::barrier barrier_;
