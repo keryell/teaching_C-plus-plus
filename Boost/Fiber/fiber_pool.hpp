@@ -144,6 +144,8 @@ private:
             == boost::fibers::channel_op_status::closed)
           // Someone asked to stop accepting work
           break;
+        // \todo implement with packaged_task to handle exception and
+        // avoid std::function
         // Launch the work on a new unattended fiber
         boost::fibers::fiber { starting_mode,
                                [f = std::move(work)] { f(); } }.detach();

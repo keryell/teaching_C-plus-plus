@@ -29,7 +29,7 @@ void bench_mark(int thread_number,
             << " fibers: "<< fiber_number
             << " iterations: " << iterations
             << " scheduler: " << static_cast<int>(scheduler)
-            << " suspend: " << static_cast<int>(suspend) << std::flush;
+            << " suspend: " << static_cast<int>(suspend) << std::endl;
 
   fiber_pool fp { thread_number, scheduler, suspend };
 
