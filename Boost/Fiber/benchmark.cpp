@@ -64,6 +64,13 @@ void bench_mark(int thread_number,
                // In ns
             << duration.count()/iterations/fiber_number*1e9 << std::endl
             << " S: " << s << " F: " << f << " C: " << c << std::endl;
+/*
+  assert(s == fiber_number
+         && "we should have the same number of start as the number of fibers");
+  assert(s == f && "we should have the same number of start and finish");
+  assert(c == fiber_number*iterations
+         && "we should have the right number of global interations");
+*/
 }
 
 int main() {
