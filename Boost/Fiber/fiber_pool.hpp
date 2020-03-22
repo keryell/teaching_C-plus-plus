@@ -35,8 +35,8 @@ private:
   /// The queue to submit work
   boost::fibers::unbuffered_channel<std::function<void(void)>> submission;
 
-  static auto constexpr starting_mode = boost::fibers::launch::post;
-  //static auto constexpr starting_mode = boost::fibers::launch::dispatch;
+  //static auto constexpr starting_mode = boost::fibers::launch::post;
+  static auto constexpr starting_mode = boost::fibers::launch::dispatch;
 
   /// To synchronize all the threads before they can run some fibers
   boost::barrier starting_block;
