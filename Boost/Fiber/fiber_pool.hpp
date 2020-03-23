@@ -33,7 +33,8 @@ private:
   std::vector<std::future<void>> working_threads;
 
   /// The queue to submit work
-  boost::fibers::unbuffered_channel<std::function<void(void)>> submission;
+  boost::fibers::unbuffered_channel
+  <boost::fibers::packaged_task<void(void)>> submission;
 
   //static auto constexpr starting_mode = boost::fibers::launch::post;
   static auto constexpr starting_mode = boost::fibers::launch::dispatch;
@@ -87,7 +88,9 @@ public:
   /// Submit some work
   template <typename Callable>
   void submit(Callable && work) {
-    submission.push(std::forward<Callable>(work));
+    submission.push(boost::fibers::packaged_task<void(void)> {
+        [f = std::move(work)] { f(); }
+          });
   }
 
 
@@ -136,8 +139,10 @@ private:
     // Wait for all thread workers to be ready
     starting_block.count_down_and_wait();
 
+    // Only the first thread receives and starts the work
     if (i == 0) {
-      // Only the first thread receives the work
+      // Keep track of each fiber execution to forward exception if any
+      std::vector<boost::fibers::future<void>> futures;
       for (;;) {
         decltype(submission)::value_type work;
         if (submission.pop(work)
@@ -146,10 +151,14 @@ private:
           break;
         // \todo implement with packaged_task to handle exception and
         // avoid std::function
+        futures.push_back(work.get_future());
         // Launch the work on a new unattended fiber
-        boost::fibers::fiber { starting_mode,
-                               [f = std::move(work)] { f(); } }.detach();
+        boost::fibers::fiber { starting_mode, std::move(work) }.detach();
       }
+      // Handle any exception here. Well, actually only the first one
+      // because it will just throw
+      for (auto &f : futures)
+        f.get();
     }
     // Wait for all the threads to finish their fiber execution
     finish_line.wait();
