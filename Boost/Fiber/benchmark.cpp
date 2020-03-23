@@ -15,16 +15,21 @@
 #include <iostream>
 
 #include "fiber_pool.hpp"
+#ifdef TRISYCL_FIBER_POOL_DEBUG
+#define TRISYCL_FIBER_POOL_DEBUG_EXEC(...) __VA_ARGS__
+#else
+#endif
+
 
 // Use precise time measurement
 using clk = std::chrono::high_resolution_clock;
 
 /// A parametric benchmark
-void bench_mark(int thread_number,
-                int fiber_number,
-                int iterations,
-                fiber_pool::sched scheduler,
-                bool suspend) {
+void benchmark(int thread_number,
+               int fiber_number,
+               int iterations,
+               fiber_pool::sched scheduler,
+               bool suspend) {
   std::cout << "threads: " << thread_number
             << " fibers: "<< fiber_number
             << " iterations: " << iterations
@@ -33,18 +38,26 @@ void bench_mark(int thread_number,
 
   fiber_pool fp { thread_number, scheduler, suspend };
 
+#ifdef TRISYCL_FIBER_POOL_DEBUG
   std::atomic<std::int64_t> c = 0;
   std::atomic<std::int64_t> f = 0;
   std::atomic<std::int64_t> s = 0;
+#endif
 
   /// The basic benchmark is fiber doing a lot of yield()
   auto bench = [&] {
-                 ++s;
+ #ifdef TRISYCL_FIBER_POOL_DEBUG
+                ++s;
+#endif
                  for (auto counter = iterations; counter != 0; --counter) {
                    boost::this_fiber::yield();
+#ifdef TRISYCL_FIBER_POOL_DEBUG
                    ++c;
+#endif
                  }
+#ifdef TRISYCL_FIBER_POOL_DEBUG
                  ++f;
+#endif
                };
 
   auto starting_point = clk::now();
@@ -62,15 +75,15 @@ void bench_mark(int thread_number,
   std::cout << " time: " << duration.count()
             << " inter context switch: "
                // In ns
-            << duration.count()/iterations/fiber_number*1e9 << std::endl
-            << " S: " << s << " F: " << f << " C: " << c << std::endl;
-/*
+            << duration.count()/iterations/fiber_number*1e9 << std::endl;
+#ifdef TRISYCL_FIBER_POOL_DEBUG
+  std::cout << " S: " << s << " F: " << f << " C: " << c << std::endl;
   assert(s == fiber_number
          && "we should have the same number of start as the number of fibers");
   assert(s == f && "we should have the same number of start and finish");
   assert(c == fiber_number*iterations
          && "we should have the right number of global interations");
-*/
+#endif
 }
 
 int main() {
@@ -82,17 +95,17 @@ int main() {
         for (auto scheduler : { fiber_pool::sched::round_robin,
                                 fiber_pool::sched::shared_work,
                                 fiber_pool::sched::work_stealing }) {
-          bench_mark(thread_number,
-                     fiber_number,
-                     iterations,
-                     scheduler,
-                     false);
+          benchmark(thread_number,
+                    fiber_number,
+                    iterations,
+                    scheduler,
+                    false);
           if (scheduler != fiber_pool::sched::round_robin)
             // The same but with the thread suspension when no work
-            bench_mark(thread_number,
-                       fiber_number,
-                       iterations,
-                       scheduler,
-                       true);
+            benchmark(thread_number,
+                      fiber_number,
+                      iterations,
+                      scheduler,
+                      true);
         }
 }

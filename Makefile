@@ -4,6 +4,11 @@ CXX=clang++-11
 CXXFLAGS += -O3
 #CXXFLAGS += -g
 
+# To debug the Boost.Fiber pool executor benchmark
+#CXXFLAGS += -DTRISYCL_FIBER_POOL_DEBUG
+#CXXFLAGS += -I /home/rkeryell/Xilinx/Projects/C++/Boost/boost-root
+#LDFLAGS += -L /home/rkeryell/Xilinx/Projects/C++/Boost/boost-root/stage/lib
+
 #CXXFLAGS += -I ~/Xilinx/Projects/C++/range-v3/include -Wall -std=c++2a -D__cpp_concepts=0
 #CXXFLAGS += -Wall -std=c++2a -U__cpp_concepts
 #CXXFLAGS += -Wall -std=c++2a
