@@ -15,11 +15,6 @@
 #include <iostream>
 
 #include "fiber_pool.hpp"
-#ifdef TRISYCL_FIBER_POOL_DEBUG
-#define TRISYCL_FIBER_POOL_DEBUG_EXEC(...) __VA_ARGS__
-#else
-#endif
-
 
 // Use precise time measurement
 using clk = std::chrono::high_resolution_clock;
