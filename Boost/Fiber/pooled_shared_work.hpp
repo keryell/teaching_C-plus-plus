@@ -1,8 +1,22 @@
 //          Copyright Nat Goodspeed + Oliver Kowalke 2015
 //                                  + Ronan Keryell 2020
+//
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
+
+// This file is adapted from
+// https://github.com/boostorg/fiber/blob/develop/include/boost/fiber/algo/shared_work.hpp
+//
+//
+// It provides a scheduler sharing some work across a given number of
+// threads.
+//
+// The fiber pool can be stopped and several instances can coexist in
+// the same program.
+//
+// The main change to the original scheduler is to replace static
+// variables by a shared context.
 
 #ifndef BOOST_FIBERS_ALGO_POOLED_SHARED_WORK_H
 #define BOOST_FIBERS_ALGO_POOLED_SHARED_WORK_H
@@ -70,7 +84,7 @@ class BOOST_FIBERS_DECL pooled_shared_work : public algorithm {
   std::condition_variable cnd_ {};
   bool flag_ { false };
 
-public:
+ public:
 
   static ctx
   create_pool_ctx(bool suspend) {

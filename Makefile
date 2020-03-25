@@ -1,6 +1,6 @@
 # Which compiler
-CXX=clang++-11
-#CXX=g++-9
+#CXX=clang++-11
+CXX=g++-9
 CXXFLAGS += -O3
 #CXXFLAGS += -g
 
