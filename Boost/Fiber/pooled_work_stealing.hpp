@@ -29,9 +29,9 @@
 
 #include <boost/config.hpp>
 #include <boost/context/detail/prefetch.hpp>
+#include <boost/fiber/detail/config.hpp>
 #include <boost/fiber/algo/algorithm.hpp>
 #include <boost/fiber/context.hpp>
-#include <boost/fiber/detail/config.hpp>
 #include <boost/fiber/detail/context_spinlock_queue.hpp>
 #include <boost/fiber/detail/context_spmc_queue.hpp>
 #include <boost/fiber/scheduler.hpp>
@@ -134,7 +134,7 @@ class BOOST_FIBERS_DECL pooled_work_stealing : public algorithm {
   context * pick_next() noexcept override {
     context * victim = rqueue_.pop();
     if (nullptr != victim) {
-      boost::context::detail::prefetch_range(victim, sizeof(context));
+      boost::context::detail::prefetch_range(victim, sizeof(*victim));
       if (!victim->is_context(type::pinned_context)) {
         context::active()->attach(victim);
       }

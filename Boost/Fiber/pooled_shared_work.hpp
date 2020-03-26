@@ -29,9 +29,9 @@
 #include <boost/config.hpp>
 #include <boost/assert.hpp>
 
+#include <boost/fiber/detail/config.hpp>
 #include <boost/fiber/algo/algorithm.hpp>
 #include <boost/fiber/context.hpp>
-#include <boost/fiber/detail/config.hpp>
 #include <boost/fiber/scheduler.hpp>
 #include "boost/fiber/type.hpp"
 
