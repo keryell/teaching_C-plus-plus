@@ -34,8 +34,11 @@ void benchmark(int thread_number,
   fiber_pool fp { thread_number, scheduler, suspend };
 
 #ifdef TRISYCL_FIBER_POOL_DEBUG
+  /// Count globally how many times we enter the benchmark loop
   std::atomic<std::int64_t> c = 0;
+  /// Count globally how many times we iterate in the benchmark loop
   std::atomic<std::int64_t> f = 0;
+  /// Count globally how many times we exit the benchmark loop
   std::atomic<std::int64_t> s = 0;
 #endif
 
@@ -66,11 +69,10 @@ void benchmark(int thread_number,
   // Get the duration in seconds as a double
   std::chrono::duration<double> duration = clk::now() - starting_point;
 
-  // In s
   std::cout << " time: " << duration.count()
-            << " inter context switch: "
-               // In ns
-            << duration.count()/iterations/fiber_number*1e9 << std::endl;
+            << " s, yield() frequency: "
+            << iterations*fiber_number/duration.count() << " Hz"
+            << std::endl;
 #ifdef TRISYCL_FIBER_POOL_DEBUG
   std::cout << " S: " << s << " F: " << f << " C: " << c << std::endl;
   assert(s == fiber_number
@@ -81,12 +83,13 @@ void benchmark(int thread_number,
 #endif
 }
 
+
 int main() {
   for (std::size_t thread_number = 1;
        thread_number <= 2*std::thread::hardware_concurrency();
        ++thread_number)
     for (auto fiber_number : { 1, 3, 10, 30, 100, 300, 1000, 3000 })
-      for (auto iterations : { 1e4, 1e5, 1e6 })
+      for (auto iterations : { 0., 1., 1e4, 1e5, 1e6 })
         for (auto scheduler : { fiber_pool::sched::round_robin,
                                 fiber_pool::sched::shared_work,
                                 fiber_pool::sched::work_stealing }) {
