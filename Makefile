@@ -27,6 +27,7 @@ TARGETS = bin_packing_best_worst_fit \
 	constexpr_fibonacci \
 	meta_iterate \
 	move/vectors \
+	non-initializing/remove_initialization \
 	non-initializing/uninitialized_vector \
 	permute_string_letters \
 	permute_unique_string_letters \
