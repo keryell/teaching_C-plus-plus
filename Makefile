@@ -27,14 +27,14 @@ TARGETS = bin_packing_best_worst_fit \
 	constexpr_fibonacci \
 	meta_iterate \
 	move/vectors \
+	non-initializing/uninitialized_vector \
 	permute_string_letters \
 	permute_unique_string_letters \
 	quizz/quizz \
 	ranges \
 	ref_to_array \
 	test_parenthesis \
-	try_set \
-	uninitialized_vector
+	try_set
 
 all: $(TARGETS)
 
