@@ -1,23 +1,23 @@
-// A 2D array without initialization
+// A wrapping type to skip initialization
 //
-// https://godbolt.org/z/_pXo2s
+// https://godbolt.org/z/eA2D6F
 
 #include <complex>
 #include <cstdint>
 #include <type_traits>
 
 // Use a union to avoid initialization
-template <typename T, std::size_t X, std::size_t Y>
-union uninitialized_array {
-  T data[X][Y];
-  uninitialized_array() { /* No initializing... */ };
+template <typename T>
+union remove_initialization {
+  using value_type = T;
+  T data;
+  remove_initialization() { /* No initializing here... */ };
   // For lazy people, just pretend we can use this union as the internal value
-  using data_type = decltype(data);
-  operator data_type & () { return data; };
+  operator value_type & () { return data; };
 };
 
 int main() {
-  uninitialized_array<std::complex<std::int16_t>, 3, 5> a;
+  remove_initialization<std::complex<std::int16_t>[3][5]> a;
 
   // You can access the internal details, but it is tedious
   a.data[2][3] = { 2, 3 };
