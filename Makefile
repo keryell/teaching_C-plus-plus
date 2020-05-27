@@ -45,6 +45,7 @@ TARGETS = \
 	obsolete_to_clean_up/test_parenthesis \
 	obsolete_to_clean_up/try_set \
 	quizz/quizz \
+	ranges/capitalize \
 	ranges/ranges \
 	ref/ref_to_array
 
