@@ -1,16 +1,18 @@
 # Just try make on a Unix-like system
 
 # Adapt to the require compiler
-#CXX=clang++-11
-CXX=g++-9
+CXX=clang++-13
+#CXX=g++-10
 # To use Clang C++ standard library:
-#CXXFLAGS += -stdlib=libc++
+# apt install libc++-13-dev libc++abi-13-dev
+
+CXXFLAGS += -stdlib=libc++
 
 # Warnings are useful
 CXXFLAGS += -Wall
 
 # Which version of C++
-CXXFLAGS += -std=c++2a
+CXXFLAGS += -std=c++20
 
 # To optimize or to debug... That is the question
 #CXXFLAGS += -O3
@@ -47,6 +49,7 @@ TARGETS = \
 	quizz/quizz \
 	ranges/capitalize \
 	ranges/ranges \
+	ranges/text_anonymizer \
 	ref/ref_to_array
 
 all: $(TARGETS)
