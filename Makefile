@@ -36,6 +36,7 @@ TARGETS = \
 	Boost/Fiber/fibers_in_threads \
 	Boost/Fiber/fibers_with_threads \
 	constexpr/constexpr_fibonacci \
+	meta-programming/loop_unroll \
 	meta-programming/meta_iterate \
 	move/vectors \
 	non-initializing/remove_initialization \
